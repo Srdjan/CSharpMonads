@@ -2,9 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 
-//http://hodzanassredin.github.io/2014/06/21/yet-another-monad-guide.html
-//http://blogs.claritycon.com/blog/2013/08/functional-concepts-c/
-
 namespace ConsoleApplication1 {
 	class Program {
 		//-- helper functions
@@ -14,34 +11,60 @@ namespace ConsoleApplication1 {
 		static string Substring(string s) => s.Substring(3);
 		static int Length(string s) => s.Length;
 		static string ToString(int i) => "\"\{i}\"";
-		//--
-
 		static string ExtractVowels(string text) {
 			var vowels = text.Where(c => "aeiouAEIOU".Contains(c)).ToArray();
 			return new string(vowels);
 		}
+		//--
+
+		class Product {
+			public string SKU { get; }
+			public string Name { get; }
+			public int ManufacturerId { get; }
+
+			public Product(string sku, string name, int manufacturerId) {
+				SKU = sku;
+				Name = name;
+				ManufacturerId = manufacturerId;
+			}
+		}
+		static string Show<T>(T t) => "\"\{t.ToString()}\"";
+
+		class Manufacturerer {
+			public string Name { get; }
+			public int Id { get; }
+
+			public Manufacturerer(int id, string name) {
+				Id = Id;
+				Name = name;
+			}
+		}
+
 		static void Main(string[] args) {
-			// Maybe monad usage: input regular string, intermediate result int...
-			var maybeStr = new Maybe<string>("I'm the wrapped up value!");
-			var result = maybeStr.Bind(ExtractVowels)
-													 .Bind(Length)
-													 .Bind(ToString);
-			Console.WriteLine(result.Value);
+			//// Maybe monad usage: input regular string, intermediate result int...
+			//var maybeStr = new Maybe<string>("I'm the wrapped up value!");
+			//var result = maybeStr.Bind(ExtractVowels)
+			//										 .Bind(Length)
+			//										 .Bind(ToString);
+			//Console.WriteLine(result.Value);
 
-			// Maybe monad usage: null string
-			maybeStr = new Maybe<string>(null);
-			result = maybeStr.Bind(ExtractVowels)
-											 .Bind(ToLower);
-			Console.WriteLine(result.Value == null ? "null" : result.Value);
+			//// Maybe monad usage: null string
+			//maybeStr = new Maybe<string>(null);
+			//result = maybeStr.Bind(ExtractVowels)
+			//								 .Bind(ToLower);
+			//Console.WriteLine(result.Value == null ? "null" : result.Value);
 
-			// Writer monad usage
-			var writerMaybeMonad = new WriterT<string>("Nice, nice, and nice...");
-			result = writerMaybeMonad.Bind(ExtractVowels)
-															 .Bind(Length)
-															 .Bind(ToString);
-			Console.WriteLine(result.Value);
-			foreach (var s in result.Info) Console.WriteLine(s);
+			//// Writer monad usage
+			//var writerMaybeMonad = new WriterT<string>("Nice, nice, and nice...");
+			//result = writerMaybeMonad.Bind(ExtractVowels)
+			//												 .Bind(Length)
+			//												 .Bind(ToString);
+			//Console.WriteLine(result.Value);
+			//foreach (var s in result.Info) Console.WriteLine(s);
 
+			var manufacturerMaybe = new Maybe<Manufacturerer>(new Manufacturerer(1, "Sony"));
+			Console.WriteLine(manufacturerMaybe.Value);
+			Console.WriteLine(manufacturerMaybe.Bind(Show));
 			Console.ReadLine();
 		}
 	}
