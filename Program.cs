@@ -4,13 +4,21 @@ using System.Linq;
 
 namespace ConsoleApplication1 {
 	class Program {
+		class Number {
+			public int Value { get; }
+			public Number(int value) {
+				Value = value;
+			}
+			public override string ToString() {
+				return Value.ToString();
+			}
+		}
 		//-- helper functions
 		static string ToUpper(string s) => s.ToUpper();
 		static string ToLower(string s) => s.ToLower();
 		static string Trim(string s) => s.Trim();
-		static string Substring(string s) => s.Substring(3);
-		static int Length(string s) => s.Length;
-		static string ToString(int i) => "\"\{i}\"";
+		static string Substring(string s) => s.Substring(30);
+		static Number Length(string s) => new Number(s.Length);
 		static string ExtractVowels(string text) {
 			var vowels = text.Where(c => "aeiouAEIOU".Contains(c)).ToArray();
 			return new string(vowels);
@@ -41,30 +49,25 @@ namespace ConsoleApplication1 {
 		}
 
 		static void Main(string[] args) {
-			//// Maybe monad usage: input regular string, intermediate result int...
-			//var maybeStr = new Maybe<string>("I'm the wrapped up value!");
-			//var result = maybeStr.Bind(ExtractVowels)
-			//										 .Bind(Length)
-			//										 .Bind(ToString);
-			//Console.WriteLine(result.Value);
+			// Maybe monad usage: input regular string, intermediate result int...
+			var maybeM = new MaybeM<string>("I'm a string, wrapped up in the Maybe Monad!");
+			var result = maybeM.Bind(ExtractVowels)
+													 .Bind(Length);
+			Console.WriteLine("Result is: \{result.Value.Value}");
 
-			//// Maybe monad usage: null string
-			//maybeStr = new Maybe<string>(null);
-			//result = maybeStr.Bind(ExtractVowels)
-			//								 .Bind(ToLower);
-			//Console.WriteLine(result.Value == null ? "null" : result.Value);
+			// Maybe monad usage: null string
+			maybeM = new MaybeM<string>(null);
+			var result2 = maybeM.Bind(ExtractVowels)
+											 .Bind(Length);
+			Console.WriteLine("Result is null?: \{result2.Value == null}");
 
-			//// Writer monad usage
-			//var writerMaybeMonad = new WriterT<string>("Nice, nice, and nice...");
-			//result = writerMaybeMonad.Bind(ExtractVowels)
-			//												 .Bind(Length)
-			//												 .Bind(ToString);
-			//Console.WriteLine(result.Value);
-			//foreach (var s in result.Info) Console.WriteLine(s);
+			// Writer monad usage
+			var writerM = new WriterM<string>("I'm a string, wrapped up in the Maybe Monad!");
+			var result3 = writerM.Bind(ExtractVowels)
+															 .Bind(Length);
+			Console.WriteLine("Result is: \{result3.Value.Value}");
+			foreach (var s in result3.Info) Console.WriteLine(s);
 
-			var manufacturerMaybe = new Maybe<Manufacturerer>(new Manufacturerer(1, "Sony"));
-			Console.WriteLine(manufacturerMaybe.Value);
-			Console.WriteLine(manufacturerMaybe.Bind(Show));
 			Console.ReadLine();
 		}
 	}
@@ -72,61 +75,53 @@ namespace ConsoleApplication1 {
 	public interface IMonad<T> {
 		//note: Return is implemented by constructor
 		//IMonad<T> Return(T @value);
-		IMonad<T2> Bind<T2>(Func<T, T2> f);
+		IMonad<T2> Bind<T2>(Func<T, T2> f) where T2 : class;
 
-		//optional, but helpfull :)
+		// public access to wrapped up value, optional but helpfull :)
 		T Value { get; }
+
+		// used in WriterM
 		List<string> Info { get; }
 	}
 
-	class Maybe<T> : IMonad<T> {
+	//-- Maybe monad
+	class MaybeM<T> : IMonad<T> {
 		public T Value { get; }
 		public List<string> Info { get; internal set; }
 
-		public Maybe(T @value) {
+		public MaybeM(T @value) {
 			Value = @value;
 			Info = new List<string>();
 		}
 
-		public virtual IMonad<T2> Bind<T2>(Func<T, T2> f) {
+		public virtual IMonad<T2> Bind<T2>(Func<T, T2> f) where T2 : class {
 			if (Value != null) {
-				return new Maybe<T2>(f(Value));
+				return new MaybeM<T2>(f(Value));
 			}
-			return new Maybe<T2>(default(T2));
+			return new MaybeM<T2>(null);
 		}
 	}
 
-	class Writer<T> : IMonad<T> {
-		public T Value { get; }
-		public List<string> Info { get; internal set; }
+	//-- Writer + Maybe combined
+	class WriterM<T> : MaybeM<T> {
+		public WriterM(T @value) : base(@value) {	}
 
-		public Writer(T @value) {
-			Value = @value;
-		}
-
-		public IMonad<T2> Bind<T2>(Func<T, T2> f) {
-			if (Value != null) {
-				var result = f(Value);
-				var ret = new Writer<T2>(result);
-				ret.Info.Add("Result for \{f.GetType().Name} is {result}");
-				return ret;
-			}
-			Info.Add("\{f.GetType().Name} not applied, value == null");
-			return new Writer<T2>(default(T2));
-		}
-	}
-
-	class WriterT<T> : Maybe<T> {
-		public WriterT(T @value) : base(@value) { }
-		WriterT(T @value, List<string> info) : base(@value) {
+		WriterM(T @value, List<string> info) : base(@value) {
 			Info = info;
 		}
 
 		public override IMonad<T2> Bind<T2>(Func<T, T2> f) {
-			var result = base.Bind(f);
-			var w = new WriterT<T2>(result.Value, Info);
-			w.Info.Add("Result for \{(f.Method).Name}() is \{result.Value.GetType()} -> \{result.Value}");
-			return w;
+			try {
+				var result = base.Bind(f);
+				var w = new WriterM<T2>(result.Value, Info);
+				w.Info.Add("Result for \{(f.Method).Name}() is: \{result.Value.GetType()} -> \{result.Value}");
+				return w;
+			}
+			catch (Exception ex) {
+				var w = new WriterM<T2>(default(T2), Info);
+				w.Info.Add("Exception: \{ex.Message} thrown for \{(f.Method).Name}()");
+				return w;
+			}
 		}
 	}
 }
