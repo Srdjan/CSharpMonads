@@ -74,8 +74,8 @@ namespace ConsoleApplication1 {
 	//-- monad interface
 	//--
 	public interface IMonad<T> {
-		//note: Return is implemented by constructor
-		//IMonad<T> Return(T @value);
+		//note: 'From' is implemented by constructor
+		//IMonad<T> From(T @value);
 		IMonad<T2> Bind<T2>(Func<T, T2> f) where T2 : class;
 
 		// simple public access the wrapped value(s), optional but helpfull :)
