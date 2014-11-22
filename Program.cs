@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Console;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -14,9 +15,6 @@ namespace ConsoleApplication1 {
 			}
 		}
 		//-- helper functions
-		static string ToUpper(string s) => s.ToUpper();
-		static string ToLower(string s) => s.ToLower();
-		static string Trim(string s) => s.Trim();
 		static string Substring(string s) => s.Substring(30);
 		static Number Length(string s) => new Number(s.Length);
 		static string ExtractVowels(string text) {
@@ -53,40 +51,39 @@ namespace ConsoleApplication1 {
 			var maybeM = new MaybeM<string>("I'm a string, wrapped up in the Maybe Monad!");
 			var result1 = maybeM.Bind(ExtractVowels)
 											 	  .Bind(Length);
-			Console.WriteLine("Result is: \{result1.Value}");
+			WriteLine("Result is: \{result1.Show()}");
 
 			//-2) Maybe monad usage: null string
 			maybeM = new MaybeM<string>(null);
 			var result2 = maybeM.Bind(ExtractVowels)
 													.Bind(Length);
-			Console.WriteLine("Result is: \{result2.Value}");
+			WriteLine("Result is: \{result2.Show()}");
 
 			//-3) Writer monad usage
 			var writerM = new WriterM<string>("I'm a string, wrapped up in the Maybe Monad!");
 			var result3 = writerM.Bind(ExtractVowels)
 													 .Bind(Length);
-			Console.WriteLine("Result is: \{result3.Value}");
+			WriteLine("Result is: \{result3.Show()}");
 
-			Console.ReadLine();
+			ReadLine();
 		}
 	}
 
 	//-- monad interface
 	//--
 	public interface IMonad<T> {
-		//note: 'From' is implemented by constructor
-		//IMonad<T> From(T @value);
+		//IMonad<T> From(T @value);//note: implemented as constructor
+
 		IMonad<T2> Bind<T2>(Func<T, T2> f) where T2 : class;
 
-		// simple public access the wrapped value(s), optional but helpfull :)
-		string Value { get; }
+		// simple access the wrapped value(s), optional but helpfull :)
+		string Show();
 	}
 
 	//-- Maybe monad
 	//--
 	class MaybeM<T> : IMonad<T> {
 		internal T _value;
-		public string Value {	get { return _value == null ? "null" :  _value.ToString(); }}
 
 		public MaybeM(T value) {
 			_value = value;
@@ -98,20 +95,16 @@ namespace ConsoleApplication1 {
 			}
 			return new MaybeM<T2>(null);
 		}
+
+		public string Show() {
+			return _value == null ? "null" : _value.ToString();
+		}
 	}
 
 	//-- Writer monad 
 	//--
 	class WriterM<T> : IMonad<T> {
 		internal T _value;
-		public string Value {
-			get {
-				var valStr = _value.ToString();
-				_info.ForEach(s => valStr += ", " + s);
-				return valStr;
-			}
-		}
-
 		List<string> _info;
 
 		public WriterM(T @value) {
@@ -134,6 +127,12 @@ namespace ConsoleApplication1 {
 				_info.Add("Exception: \{ex.Message} thrown for \{(f.Method).Name}()");
 				return new WriterM<T2>(default(T2), _info);
 			}
+		}
+
+		public string Show() {
+			var valStr = _value.ToString();
+			_info.ForEach(s => valStr += "\r\n\t" + s);
+			return valStr;
 		}
 	}
 }
