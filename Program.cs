@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Console;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace ConsoleApplication1 {
 	class Program {
 		class Number {
-			public int Value { get; }
+			int Value { get; }
 			public Number(int value) {
 				Value = value;
 			}
@@ -34,7 +33,7 @@ namespace ConsoleApplication1 {
 				ManufacturerId = manufacturerId;
 			}
 		}
-		static string Show<T>(T t) => "\"\{t.ToString()}\"";
+		static string Show<T>(T t) => "${t.ToString()}";
 
 		class Manufacturerer {
 			public string Name { get; }
@@ -51,21 +50,21 @@ namespace ConsoleApplication1 {
 			var maybeM = new MaybeM<string>("I'm a string, wrapped up in the Maybe Monad!");
 			var result1 = maybeM.Bind(ExtractVowels)
 											 	  .Bind(Length);
-			WriteLine("Result is: \{result1.Show()}");
+			Console.WriteLine($"Result is: {result1.Show()}");
 
 			//-2) Maybe monad usage: null string
 			maybeM = new MaybeM<string>(null);
 			var result2 = maybeM.Bind(ExtractVowels)
 													.Bind(Length);
-			WriteLine("Result is: \{result2.Show()}");
+			Console.WriteLine($"Result is: {result2.Show()}");
 
 			//-3) Writer monad usage
 			var writerM = new WriterM<string>("I'm a string, wrapped up in the Maybe Monad!");
 			var result3 = writerM.Bind(ExtractVowels)
 													 .Bind(Length);
-			WriteLine("Result is: \{result3.Show()}");
+			Console.WriteLine($"Result is: {result3.Show()}");
 
-			ReadLine();
+			Console.ReadLine();
 		}
 	}
 
@@ -120,11 +119,11 @@ namespace ConsoleApplication1 {
 		public IMonad<T2> Bind<T2>(Func<T, T2> f) where T2 : class {
 			try {
 				var result = (f(_value));
-				_info.Add("\{(f.Method).Name}()-> \{result}");
+				_info.Add($"{(f.Method).Name}()-> {result}");
 				return new WriterM<T2>(f(_value), _info);
 			}
 			catch (Exception ex) {
-				_info.Add("Exception: \{ex.Message} thrown for \{(f.Method).Name}()");
+				_info.Add($"Exception: {ex.Message} thrown for {(f.Method).Name}()");
 				return new WriterM<T2>(default(T2), _info);
 			}
 		}
